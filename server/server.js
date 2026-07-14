@@ -1,26 +1,30 @@
-const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
+const dns = require("dns");
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
+
 require("dotenv").config();
+
+const express = require("express");
+const connectDB = require("./config/db");
+const authRoutes = require("./routes/authRoutes");
+const testRoutes = require("./routes/testRoutes");
 
 const app = express();
 
-// Middleware
-app.use(cors());
+connectDB();
+
 app.use(express.json());
 
-// MongoDB Connection
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log("✅ MongoDB Connected"))
-  .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
-// Test Route
+// Authentication Routes
+app.use("/api/auth", authRoutes);
+app.use("/api/test", testRoutes);
+
+
 app.get("/", (req, res) => {
-  res.send("CrowdSafe Backend Running...");
+  res.send("CrowdSafe API is Running...");
 });
 
-// Start Server
+
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
