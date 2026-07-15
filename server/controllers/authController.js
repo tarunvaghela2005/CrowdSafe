@@ -32,7 +32,7 @@ exports.register = async (req,res)=>{
 
         res.status(201).json({
             message:"Registration successful",
-            token:generateToken(user._id),
+            token:generateToken(user),
             user:{
                 id:user._id,
                 name:user.name,
@@ -89,7 +89,7 @@ exports.login = async(req,res)=>{
 
             message:"Login successful",
 
-            token:generateToken(user._id),
+            token:generateToken(user),
 
             user:{
                 id:user._id,

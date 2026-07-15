@@ -1,30 +1,56 @@
 const express = require("express");
 
-const controller = require("../controllers/reportController");
-
-console.log("Controller Loaded:", controller);
-
 const {
     createReport,
     getReports,
     getReportById,
     updateReport,
+    updateReportStatus,
     deleteReport
-} = controller;
+} = require("../controllers/reportController");
 
+const upload = require("../middleware/upload");
+const authMiddleware = require("../middleware/authMiddleware");
+const adminMiddleware = require("../middleware/adminMiddleware");
 
 const router = express.Router();
+console.log("createReport:", typeof createReport);
+console.log("getReports:", typeof getReports);
+console.log("getReportById:", typeof getReportById);
+console.log("updateReport:", typeof updateReport);
+console.log("updateReportStatus:", typeof updateReportStatus);
+console.log("deleteReport:", typeof deleteReport);
 
+// Create Report
+router.post(
+    "/",
+    authMiddleware,
+    upload.array("images", 5),
+    createReport
+);
 
-router.post("/", createReport);
-
+// Get All Reports
 router.get("/", getReports);
 
+// Get Single Report
 router.get("/:id", getReportById);
 
-router.put("/:id", updateReport);
+// Update Report
+router.put("/:id", authMiddleware, updateReport);
 
-router.delete("/:id", deleteReport);
+// Update Report Status (Admin Only)
+router.patch(
+    "/:id/status",
+    authMiddleware,
+    adminMiddleware,
+    updateReportStatus
+);
 
+// Delete Report (Admin Only)
+router.delete(
+    "/:id",
+    authMiddleware,
+    deleteReport
+);
 
 module.exports = router;
