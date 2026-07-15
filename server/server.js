@@ -7,23 +7,26 @@ const express = require("express");
 const connectDB = require("./config/db");
 const authRoutes = require("./routes/authRoutes");
 const testRoutes = require("./routes/testRoutes");
+const categoryRoutes = require("./routes/categoryRoutes");
+const reportRoutes = require("./routes/reportRoutes");
 
 const app = express();
 
 connectDB();
 
+// Middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-
-// Authentication Routes
+// Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/test", testRoutes);
-
+app.use("/api/categories", categoryRoutes);
+app.use("/api/reports", reportRoutes);
 
 app.get("/", (req, res) => {
   res.send("CrowdSafe API is Running...");
 });
-
 
 const PORT = process.env.PORT || 5000;
 
