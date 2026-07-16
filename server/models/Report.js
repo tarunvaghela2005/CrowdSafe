@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+const Report = require("../models/Report");
 
 const reportSchema = new mongoose.Schema(
     {

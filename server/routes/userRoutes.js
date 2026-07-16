@@ -5,12 +5,37 @@ const {
     getAllUsers,
     getUserById,
     updateUserRole,
-    deleteUser
+    deleteUser,
+    getDashboard,
+    getUserReports,
+    searchUserReports
 } = require("../controllers/userController");
-
 
 const protect = require("../middleware/authMiddleware");
 const authorizeRoles = require("../middleware/roleMiddleware");
+
+// ================= USER DASHBOARD =================
+
+// Logged-in user dashboard
+router.get(
+    "/dashboard",
+    protect,
+    getDashboard
+);
+// Search
+router.get(
+    "/reports/search",
+    protect,
+    searchUserReports
+);
+
+// ================= ADMIN ROUTES =================
+
+router.get(
+    "/reports",
+    protect,
+    getUserReports
+);
 
 
 // Get all users (Admin only)
@@ -21,7 +46,6 @@ router.get(
     getAllUsers
 );
 
-
 // Get single user (Admin only)
 router.get(
     "/:id",
@@ -29,7 +53,6 @@ router.get(
     authorizeRoles("admin"),
     getUserById
 );
-
 
 // Change user role (Admin only)
 router.patch(
@@ -39,7 +62,6 @@ router.patch(
     updateUserRole
 );
 
-
 // Delete user (Admin only)
 router.delete(
     "/:id",
@@ -47,6 +69,5 @@ router.delete(
     authorizeRoles("admin"),
     deleteUser
 );
-
 
 module.exports = router;

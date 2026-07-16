@@ -11,8 +11,16 @@ const categoryRoutes = require("./routes/categoryRoutes");
 const reportRoutes = require("./routes/reportRoutes");
 const userRoutes = require("./routes/userRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const feedbackRoutes = require("./routes/feedbackRoutes");
 
 const app = express();
+const cors = require("cors"); 
+app.use(
+    cors({
+        origin:"http://localhost:5173",
+        credentials:true
+    })
+);
 
 connectDB();
 
@@ -27,6 +35,7 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/reports", reportRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/feedback", feedbackRoutes);
 
 app.get("/", (req, res) => {
   res.send("CrowdSafe API is Running...");
