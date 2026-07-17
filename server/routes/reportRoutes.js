@@ -3,6 +3,7 @@ const express = require("express");
 const {
     createReport,
     getReports,
+    getReportStatistics,
     getReportById,
     updateReport,
     updateReportStatus,
@@ -31,6 +32,14 @@ router.post(
 
 // Get All Reports
 router.get("/", getReports);
+
+router.get(
+    "/statistics",
+    authMiddleware,
+    adminMiddleware,
+    getReportStatistics
+);
+
 
 // Get Single Report
 router.get("/:id", getReportById);

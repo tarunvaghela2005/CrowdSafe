@@ -1,5 +1,6 @@
 const User = require("../models/User");
 const Report = require("../models/Report");
+const Notification = require("../models/Notification");
 
 // Dashboard Statistics
 const getAdminDashboard = async (req, res) => {
@@ -435,6 +436,15 @@ const verifyReport = async (req, res) => {
 
         report.status = "Verified";
 
+        await Notification.create({
+            user: report.reportedBy,
+            title: "Report Verified",
+            message: `Your report "${report.title}" has been verified by the admin.`,
+            type: "Success"
+        });
+
+
+
         await report.save();
 
         res.status(200).json({
@@ -470,6 +480,13 @@ const rejectReport = async (req, res) => {
 
         await report.save();
 
+        await Notification.create({
+            user: report.reportedBy,
+            title: "Report Rejected",
+            message: `Your report "${report.title}" has been rejected by the admin.`,
+            type: "Warning"
+        });
+        
         res.status(200).json({
             success: true,
             message: "Report rejected successfully",

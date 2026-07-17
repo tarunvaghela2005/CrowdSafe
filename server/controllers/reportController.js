@@ -1,6 +1,8 @@
 const Report = require("../models/Report");
 const cloudinary = require("../config/cloudinary");
-
+const Notification = require("../models/Notification");
+const sendEmail = require("../services/emailService");
+const { getIO } = require("../socket/socket");
 
 // Create Report
 const createReport = async (req, res) => {
@@ -59,20 +61,30 @@ const createReport = async (req, res) => {
 
 
 
-        // Create Report
         const report = await Report.create({
-
             title,
             description,
             category,
             reportedBy: req.user.id,
             location,
             priority,
-
             images: imageUrls
-
         });
 
+        console.log("Report Created:", report);
+
+        try {
+            const notification = await Notification.create({
+                user: report.reportedBy,
+                title: "Report Submitted",
+                message: `Your report "${report.title}" has been submitted successfully.`,
+                type: "Report"
+            });
+
+            console.log("Notification Created:", notification);
+        } catch (err) {
+            console.log("Notification Error:", err);
+        }
 
 
         res.status(201).json({
@@ -98,6 +110,45 @@ const createReport = async (req, res) => {
     }
 };
 
+// Admin Dashboard Statistics
+const getReportStatistics = async (req, res) => {
+
+    try {
+
+        const totalReports = await Report.countDocuments();
+
+        const pendingReports = await Report.countDocuments({
+            status: "Pending"
+        });
+
+        const verifiedReports = await Report.countDocuments({
+            status: "Verified"
+        });
+
+        const resolvedReports = await Report.countDocuments({
+            status: "Resolved"
+        });
+
+        res.status(200).json({
+            success: true,
+            data: {
+                totalReports,
+                pendingReports,
+                verifiedReports,
+                resolvedReports
+            }
+        });
+
+    } catch (error) {
+
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+
+    }
+
+};
 
 
 
@@ -211,10 +262,10 @@ const updateReport = async (req, res) => {
             req.params.id,
             req.body,
             {
-                new: true,
+                returnDocument: "after",
                 runValidators: true
             }
-        );
+        ).populate("reportedBy", "-password");
 
         res.status(200).json({
             success: true,
@@ -251,7 +302,7 @@ const updateReportStatus = async (req, res) => {
         }
 
 
-        const report = await Report.findByIdAndUpdate(
+        let report = await Report.findByIdAndUpdate(
 
             req.params.id,
 
@@ -260,11 +311,11 @@ const updateReportStatus = async (req, res) => {
             },
 
             {
-                new: true,
+                returnDocument: "after",
                 runValidators: true
             }
 
-        );
+        ).populate("reportedBy", "-password");
 
 
         if (!report) {
@@ -277,6 +328,98 @@ const updateReportStatus = async (req, res) => {
             });
 
         }
+
+
+        // Email Notification
+        try {
+
+            await sendEmail(
+
+                report.reportedBy.email,
+
+                "CrowdSafe Report Status Updated",
+
+                `Hello ${report.reportedBy.name},
+
+Your report "${report.title}" status has been updated.
+
+Current Status: ${report.status}
+
+Thank you for using CrowdSafe.`
+
+            );
+
+
+            console.log("Status update email sent");
+
+
+        } catch (error) {
+
+            console.log(
+                "Email notification error:",
+                error.message
+            );
+
+        }
+
+
+
+        // Save Notification in Database
+        try {
+
+            await Notification.create({
+
+                user: report.reportedBy._id,
+
+                title: "Report Status Updated",
+
+                message: `Your report "${report.title}" status is now ${report.status}`,
+
+                type: "Report"
+
+            });
+
+
+            console.log("Database notification created");
+
+
+        } catch (error) {
+
+            console.log(
+                "Database notification error:",
+                error.message
+            );
+
+        }
+
+
+
+        // Socket.IO Realtime Notification
+        try {
+
+            getIO()
+                .to(report.reportedBy._id.toString())
+                .emit("notification", {
+
+                    title: "Report Status Updated",
+
+                    message: `Your report "${report.title}" status is now ${report.status}`
+
+                });
+
+
+            console.log("Realtime notification sent");
+
+
+        } catch (error) {
+
+            console.log(
+                "Socket notification error:",
+                error.message
+            );
+
+        }
+
 
 
         res.status(200).json({
@@ -355,6 +498,7 @@ module.exports = {
 
     createReport,
     getReports,
+    getReportStatistics,
     getReportById,
     updateReport,
     updateReportStatus,
