@@ -7,10 +7,10 @@ const { getIO } = require("../socket/socket");
 // Create Report
 const createReport = async (req, res) => {
     try {
-
-        console.log("========== Create Report Request ==========");
+        console.log("========== CREATE REPORT ==========");
         console.log("Body:", req.body);
         console.log("Files:", req.files);
+        console.log("User:", req.user);
 
 
         if (!req.body) {
@@ -21,7 +21,7 @@ const createReport = async (req, res) => {
         }
 
 
-        const {
+        let {
             title,
             description,
             category,
@@ -36,6 +36,18 @@ const createReport = async (req, res) => {
                 message: "Please provide all required fields"
             });
         }
+
+        if (typeof location === "string") {
+            try {
+                location = JSON.parse(location);
+            } catch (err) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid location format"
+                });
+            }
+        }
+
 
 
 
@@ -58,8 +70,17 @@ const createReport = async (req, res) => {
                 imageUrls.push(result.secure_url);
             }
         }
+        console.log("Creating report with:", {
+            title,
+            description,
+            category,
+            location,
+            priority,
+            reportedBy: req.user.id,
+            imageUrls
+        });
 
-
+        console.log("Saving report...");
 
         const report = await Report.create({
             title,
@@ -71,7 +92,10 @@ const createReport = async (req, res) => {
             images: imageUrls
         });
 
-        console.log("Report Created:", report);
+        console.log("Report saved successfully!");
+        console.log(report);
+
+
 
         try {
             const notification = await Notification.create({
@@ -81,7 +105,7 @@ const createReport = async (req, res) => {
                 type: "Report"
             });
 
-            console.log("Notification Created:", notification);
+
         } catch (err) {
             console.log("Notification Error:", err);
         }
@@ -99,7 +123,12 @@ const createReport = async (req, res) => {
 
     } catch (error) {
 
+        console.error("CREATE REPORT ERROR:");
         console.error(error);
+
+        if (error.errors) {
+            console.error(error.errors);
+        }
 
         res.status(500).json({
 
@@ -185,7 +214,28 @@ const getReports = async (req, res) => {
     }
 };
 
+const getMyReports = async (req, res) => {
+    try {
+        const reports = await Report.find({
+            reportedBy: req.user.id
+        })
+            .populate("category")
+            .populate("reportedBy", "name email role")
+            .sort({ createdAt: -1 });
 
+        res.status(200).json({
+            success: true,
+            count: reports.length,
+            data: reports
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+};
 
 
 // Get Single Report
@@ -195,7 +245,7 @@ const getReportById = async (req, res) => {
 
         const report = await Report.findById(req.params.id)
             .populate("category")
-            .populate("reportedBy", "-password");
+            .populate("reportedBy", "name email role");;
 
 
         if (!report) {
@@ -315,7 +365,8 @@ const updateReportStatus = async (req, res) => {
                 runValidators: true
             }
 
-        ).populate("reportedBy", "-password");
+        ).populate("category")
+            .populate("reportedBy", "name email role");
 
 
         if (!report) {
@@ -500,9 +551,10 @@ module.exports = {
     getReports,
     getReportStatistics,
     getReportById,
+    getMyReports,
     updateReport,
     updateReportStatus,
-    deleteReport,
+    deleteReport
 
 
 };

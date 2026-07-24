@@ -7,9 +7,9 @@ const Report = require("../models/Report");
 exports.getAllUsers = async (req, res) => {
     try {
 
-        const users = await User.find()
-            .select("-password");
-
+        const users = await User.find().select(
+            "-password -resetPasswordToken -resetPasswordExpire"
+        );
         res.status(200).json({
             success: true,
             data: users
@@ -33,8 +33,9 @@ exports.getAllUsers = async (req, res) => {
 exports.getUserById = async (req, res) => {
     try {
 
-        const user = await User.findById(req.params.id)
-            .select("-password");
+        const user = await User.findById(req.params.id).select(
+            "-password -resetPasswordToken -resetPasswordExpire"
+        );
 
 
         if (!user) {
@@ -100,8 +101,8 @@ exports.updateUserRole = async (req, res) => {
     } catch (error) {
 
         res.status(500).json({
-            success:false,
-            message:error.message
+            success: false,
+            message: error.message
         });
 
     }
@@ -112,32 +113,32 @@ exports.updateUserRole = async (req, res) => {
 // @desc    Delete user
 // @route   DELETE /api/users/:id
 // @access  Admin
-exports.deleteUser = async (req,res)=>{
+exports.deleteUser = async (req, res) => {
 
-    try{
+    try {
 
         const user = await User.findByIdAndDelete(req.params.id);
 
 
-        if(!user){
+        if (!user) {
             return res.status(404).json({
-                success:false,
-                message:"User not found"
+                success: false,
+                message: "User not found"
             });
         }
 
 
         res.status(200).json({
-            success:true,
-            message:"User deleted successfully"
+            success: true,
+            message: "User deleted successfully"
         });
 
 
-    }catch(error){
+    } catch (error) {
 
         res.status(500).json({
-            success:false,
-            message:error.message
+            success: false,
+            message: error.message
         });
 
     }
@@ -151,7 +152,9 @@ exports.getDashboard = async (req, res) => {
     try {
 
         // Logged-in user
-        const user = await User.findById(req.user.id).select("-password");
+        const user = await User.findById(req.user.id).select(
+            "-password -resetPasswordToken -resetPasswordExpire"
+        );
 
         // Statistics
         const totalReports = await Report.countDocuments({
@@ -212,6 +215,8 @@ exports.getDashboard = async (req, res) => {
 // @access  Private
 
 exports.getUserReports = async (req, res) => {
+    console.log("🔥 USER REPORT ROUTE HIT");
+    console.log("Logged User:", req.user);
 
     try {
 
@@ -219,8 +224,16 @@ exports.getUserReports = async (req, res) => {
             reportedBy: req.user.id
         })
             .populate("category")
-            .populate("reportedBy", "-password")
+            .populate(
+                "reportedBy",
+                "name email role"
+            )
             .sort({ createdAt: -1 });
+
+
+        console.log("Reports Found:", reports.length);
+        console.log(reports);
+
 
         res.status(200).json({
             success: true,
@@ -228,7 +241,10 @@ exports.getUserReports = async (req, res) => {
             data: reports
         });
 
+
     } catch (error) {
+
+        console.log(error);
 
         res.status(500).json({
             success: false,
@@ -286,4 +302,73 @@ exports.searchUserReports = async (req, res) => {
 
     }
 
+};
+
+exports.getProfile = async (req, res) => {
+    try {
+
+        const user = await User.findById(req.user.id).select(
+            "-password -resetPasswordToken -resetPasswordExpire"
+        );
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: user
+        });
+
+    } catch (error) {
+
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+
+    }
+};
+
+exports.updateProfile = async (req, res) => {
+    try {
+
+        const { name, phone } = req.body;
+
+        const user = await User.findById(req.user.id);
+
+        if (!user) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        user.name = name || user.name;
+        user.phone = phone || user.phone;
+
+        await user.save();
+
+        // Fetch updated user without sensitive fields
+        const updatedUser = await User.findById(req.user.id).select(
+            "-password -resetPasswordToken -resetPasswordExpire"
+        );
+
+        res.status(200).json({
+            success: true,
+            message: "Profile updated successfully",
+            data: updatedUser
+        });
+
+    } catch (error) {
+
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+
+    }
 };

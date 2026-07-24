@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const Report = require("../models/Report");
+// const Report = require("../models/Report");
 
 const reportSchema = new mongoose.Schema(
     {
@@ -70,6 +70,12 @@ const reportSchema = new mongoose.Schema(
                 "Critical"
             ],
             default: "Medium"
+        },
+
+
+        adminRemark: {
+            type: String,
+            default: ""
         },
 
         aiScore: {

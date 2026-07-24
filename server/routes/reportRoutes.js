@@ -5,6 +5,7 @@ const {
     getReports,
     getReportStatistics,
     getReportById,
+    getMyReports,
     updateReport,
     updateReportStatus,
     deleteReport
@@ -40,6 +41,12 @@ router.get(
     getReportStatistics
 );
 
+// Get logged-in user's reports
+router.get(
+    "/my-reports",
+    authMiddleware,
+    getMyReports
+);
 
 // Get Single Report
 router.get("/:id", getReportById);
